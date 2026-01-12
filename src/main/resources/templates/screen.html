@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8"/>
+<title>Live Dispatch Screen</title>
+<meta http-equiv="refresh" content="30"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<link rel="stylesheet"
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"/>
+
+<style>
+/* ================= SAFE SCALE ================= */
+:root {
+    --body-font: clamp(22px, 2vw, 30px);
+    --header-font: clamp(26px, 2.8vw, 38px);
+    --cell-header-font: clamp(24px, 2.4vw, 32px);
+    --total-font: clamp(30px, 3vw, 40px);
+}
+
+/* ================= PAGE ================= */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #eef2f7;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+}
+
+/* ================= TOP BAR ================= */
+.topbar {
+    height: 8vh;
+    background: #003d73;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--header-font);
+    font-weight: 900;
+}
+
+/* ================= LAYOUT ================= */
+.fullscreen-area {
+    height: calc(100vh - 8vh);
+    padding: 1vh 1vw;
+}
+
+/* ================= TABLE ================= */
+table {
+    width: 100%;
+    height: calc(100vh - 14vh);
+    table-layout: fixed;
+    border-collapse: collapse;
+    background: #fff;
+    font-size: var(--body-font);
+}
+
+th, td {
+    border: 1px solid #cfd8dc;
+    text-align: center;
+    vertical-align: middle;
+    padding: 1vh 0.8vw;
+}
+
+/* ================= HEADERS ================= */
+thead th {
+    background: #1d2b36;
+    color: #fff;
+    font-weight: 900;
+}
+
+.cell-header {
+    background: #263238 !important;
+    font-size: var(--cell-header-font);
+}
+
+.subheader {
+    background: #d9ecff;
+    color: #003d73;
+    font-weight: 800;
+}
+
+/* ================= TIME SLOT ================= */
+.timeslot {
+    width: 14vw;
+    font-size: clamp(24px, 2.4vw, 32px);
+    font-weight: 900;
+    background: #f5f7fa;
+    position: relative;
+}
+
+/* ================= DATA CELLS ================= */
+.target-cell {
+    background: #e8f2ff;
+    color: #003d73;
+    font-weight: 800;
+}
+
+.actual-good {
+    background: #e7ffe9;
+    color: #0a7d2c;
+    font-weight: 900;
+}
+
+.actual-bad {
+    background: #ffe5e8;
+    color: #b00000;
+    font-weight: 900;
+}
+
+.actual-none {
+    background: #f1f1f1;
+    color: #777;
+    font-weight: 700;
+}
+
+.percent-cell {
+    font-weight: 900;
+}
+
+.percent-good { background: #e7ffe9; }
+.percent-warn { background: #fff4cc; }
+.percent-bad  { background: #ffe5e8; }
+
+/* ================= CURRENT SLOT – BORDER PULSE ONLY ================= */
+.current-slot td {
+    border-top: 3px solid #00a000 !important;
+    border-bottom: 3px solid #00a000 !important;
+    animation: rowPulse 1.6s infinite;
+}
+
+/* Left indicator only on TIME SLOT cell */
+.current-slot .timeslot {
+    position: relative;
+}
+
+.current-slot .timeslot::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 8px;
+    height: 100%;
+    background: #00a000;
+}
+
+/* Pulse animation (border intensity) */
+@keyframes rowPulse {
+    0% {
+        box-shadow: inset 0 0 0 rgba(0,160,0,0.2);
+    }
+    50% {
+        box-shadow: inset 0 0 12px rgba(0,160,0,0.45);
+    }
+    100% {
+        box-shadow: inset 0 0 0 rgba(0,160,0,0.2);
+    }
+}
+
+
+/* Pulse ONLY on TIME SLOT cell */
+.current-slot .timeslot::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 8px;
+    height: 100%;
+    background: #00a000;
+    animation: pulseBar 1.4s infinite;
+}
+
+
+/* ================= TOTAL ROW ================= */
+.total-row {
+    background: #dde6f1;
+}
+
+.total-row td {
+    font-size: var(--total-font);
+    font-weight: 900;
+    padding: 1.8vh 1vw;
+    border-top: 4px solid #003d73;
+}
+
+/* ================= FOOTER ================= */
+.footer {
+    height: 6vh;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 1vw;
+    font-size: clamp(22px, 2vw, 30px);
+    font-weight: 800;
+    color: #003d73;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">LIVE DISPATCH SCREEN</div>
+
+<div class="fullscreen-area">
+
+<div style="font-size:clamp(20px,2vw,26px); font-weight:800; margin-bottom:0.6vh;">
+    Screen: <span th:text="${screen_no}"></span>
+    &nbsp;&nbsp; Plant: <span th:text="${plnt_id}"></span>
+</div>
+
+<table>
+<thead>
+<tr>
+    <th rowspan="2" style="width:14vw;">TIME<br/>SLOT</th>
+    <th th:each="cell : ${cells}" colspan="3"
+        class="cell-header"
+        th:text="${cell.cellname}"></th>
+</tr>
+<tr>
+    <th:block th:each="cell : ${cells}">
+        <th class="subheader">TARGET</th>
+        <th class="subheader">ACTUAL</th>
+        <th class="subheader">%</th>
+    </th:block>
+</tr>
+</thead>
+
+<tbody>
+<tr th:each="slot : ${slots}"
+    th:classappend="${slot.label == currentSlot} ? 'current-slot' : ''">
+
+    <td class="timeslot" th:text="${slot.label}"></td>
+
+    <th:block th:each="cell : ${cells}">
+        <td class="target-cell"
+            th:text="${cell.cumulativeTargetBySlot[slot.label]}"></td>
+
+        <td th:if="${slot.label <= currentSlot}"
+            th:classappend="${cell.slotClasses[slot.label]}"
+            th:text="${cell.cumulativeActualBySlot[slot.label]}"></td>
+
+        <td th:if="${slot.label > currentSlot}" class="actual-none">-</td>
+
+        <td th:if="${slot.label <= currentSlot}"
+            class="percent-cell"
+            th:with="tgt=${cell.cumulativeTargetBySlot[slot.label]},
+                     act=${cell.cumulativeActualBySlot[slot.label]},
+                     pct=${tgt>0?(act*100/tgt):0}"
+            th:text="${tgt>0?#numbers.formatDecimal(pct,0,0)+'%':'-'}"
+            th:classappend="${pct>=100?'percent-good':(pct>=80?'percent-warn':'percent-bad')}"></td>
+
+        <td th:if="${slot.label > currentSlot}" class="actual-none">-</td>
+    </th:block>
+</tr>
+
+<tr class="total-row">
+    <td>TOTAL</td>
+    <th:block th:each="cell : ${cells}">
+        <td th:text="${cell.totalTarget}"></td>
+        <td th:text="${cell.totalActual}"></td>
+        <td th:text="${cell.totalTarget>0?#numbers.formatDecimal((cell.totalActual*100.0)/cell.totalTarget,0,0)+'%':'-'}"></td>
+    </th:block>
+</tr>
+</tbody>
+</table>
+
+<div class="footer">
+    Last Update: <span th:text="${lastUpdate}"></span>
+</div>
+
+</div>
+
+</body>
+</html>
